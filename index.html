@@ -19,8 +19,55 @@
     .nav-links { display: flex; gap: 24px; align-items: center; }
     .nav-links a { text-decoration: none; color: #555; font-size: 14px; }
     .nav-links a:hover { color: #0071e3; }
+
+    /* LATEST PRODUCTS SECTION */
+    .latest-section { padding: 40px 40px 60px; }
+    .latest-section h2 { font-size: 22px; font-weight: 700; margin-bottom: 24px; color: #1d1d1f; }
+    .latest-card {
+      display: flex; background: #f8f8fa; border-radius: 16px;
+      overflow: hidden; margin-bottom: 20px; cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: 1px solid #e5e5e5;
+      height: 200px;
+    }
+    .latest-card:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,113,227,0.15); border-color: #0071e3; }
+    .latest-card-img {
+      width: 320px; min-width: 320px; height: 200px;
+      object-fit: cover; display: block; flex-shrink: 0;
+    }
+    .latest-card-img-placeholder {
+      width: 320px; min-width: 320px; height: 220px;
+      background: #e8f0fe; display: flex; align-items: center; justify-content: center;
+      color: #888; font-size: 13px;
+    }
+    .latest-card-body {
+      flex: 1; padding: 20px 24px; display: flex; flex-direction: column;
+    }
+    .latest-card-meta { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
+    .latest-card-category { font-size: 12px; color: #0071e3; font-weight: 600; background: #e8f0fe; padding: 3px 10px; border-radius: 20px; }
+    .latest-card-title { font-size: 20px; font-weight: 700; color: #1d1d1f; margin-bottom: 10px; line-height: 1.3; }
+    .latest-card-desc { font-size: 13px; color: #555; line-height: 1.6; flex: 1; }
+    .latest-card-footer {
+      display: flex; align-items: center; justify-content: flex-end;
+      margin-top: 16px; padding-top: 14px; border-top: 1px solid #e5e5e5;
+    }
+    .latest-card-btn {
+      background: #0071e3; color: #fff; border: none;
+      padding: 10px 22px; border-radius: 8px; font-size: 13px;
+      font-weight: 700; cursor: pointer; text-decoration: none;
+      transition: background 0.2s; letter-spacing: 0.3px;
+    }
+    .latest-card-btn:hover { background: #005bb5; }
+    .latest-card-left { display: flex; flex-direction: column; width: 320px; min-width: 320px; height: 200px; flex-shrink: 0; }
+    @media (max-width: 700px) {
+      .latest-card { flex-direction: column; height: auto; }
+      .latest-card-left { width: 100%; min-width: unset; height: 180px; }
+      .latest-card-img, .latest-card-img-placeholder { width: 100%; min-width: unset; height: 180px; }
+      .latest-section { padding: 24px 20px; }
+    }
     .nav-manage-btn {
-      background: #1d1d1f; color: #fff; border: none;
+      background: #0071e3; color: #fff; border: none;
       padding: 8px 18px; border-radius: 20px; font-size: 13px;
       cursor: pointer; font-weight: 600;
     }
@@ -208,6 +255,34 @@
       padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;
     }
     .btn-delete:hover { background: #ffe0e0; }
+    .btn-edit {
+      background: #e8f0fe; color: #0071e3; border: 1px solid #c0d8fc;
+      padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;
+    }
+    .btn-edit:hover { background: #d0e4ff; }
+    .admin-btn-group { display: flex; gap: 8px; flex-shrink: 0; }
+    .edit-inline {
+      display: none; background: #f8f8fa; border-radius: 12px;
+      padding: 16px; margin-top: 10px; border: 1px solid #e0e8ff;
+    }
+    .edit-inline.open { display: block; }
+    .edit-inline .form-grid { gap: 10px; }
+    .edit-inline .save-btn {
+      background: #0071e3; color: #fff; border: none;
+      padding: 10px 20px; border-radius: 8px; font-size: 13px;
+      font-weight: 600; cursor: pointer; margin-top: 8px;
+    }
+    .edit-inline .save-btn:hover { background: #005bb5; }
+    .edit-inline .cancel-btn {
+      background: #f0f0f0; color: #555; border: none;
+      padding: 10px 16px; border-radius: 8px; font-size: 13px;
+      cursor: pointer; margin-top: 8px; margin-left: 8px;
+    }
+    .card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .card-tag-pill {
+      font-size: 11px; background: #e8f0fe; color: #0071e3;
+      padding: 2px 9px; border-radius: 20px; font-weight: 600;
+    }
     .empty-list { text-align: center; color: #aaa; padding: 24px; font-size: 14px; }
 
     .toast {
@@ -232,9 +307,7 @@
 
 <nav>
   <span class="nav-logo" onclick="goHome()">Deal<span> Scout</span></span>
-  <div class="nav-links">
-    <a href="#" id="navHomeLink" onclick="goHome()" style="display:none;">← Home</a>
-  </div>
+  <div class="nav-links"></div>
 </nav>
 
 <section id="heroSection">
@@ -265,6 +338,11 @@
       <div class="cat-icon">📚</div><div class="cat-label">Books</div>
     </div>
   </div>
+</section>
+
+<section id="latestSection" class="latest-section">
+  <h2>Latest Products</h2>
+  <div id="latestList"></div>
 </section>
 
 <section id="resultsSection" class="results-section">
@@ -298,8 +376,8 @@
         <input id="f_name" type="text" placeholder="e.g. iPhone 14" />
       </div>
       <div class="form-group">
-        <label>Alternative Name *</label>
-        <input id="f_alt" type="text" placeholder="e.g. Redmi Note 12 Pro" />
+        <label>Tags</label>
+        <input id="f_tags" type="text" placeholder="e.g. budget, 5G, under-20k" />
       </div>
       <div class="form-group">
         <label>Category</label>
@@ -333,10 +411,6 @@
       <div class="form-group full">
         <label>Affiliate Link</label>
         <input id="f_affLink" type="text" placeholder="https://amzn.to/..." />
-      </div>
-      <div class="form-group full">
-        <label>Product Page Link</label>
-        <input id="f_prodLink" type="text" placeholder="https://..." />
       </div>
       <div class="form-group full">
         <label>Description</label>
@@ -474,9 +548,9 @@
     currentFilter = 'all';
     document.getElementById('heroSection').style.display = 'none';
     document.getElementById('homeCategories').style.display = 'none';
+    document.getElementById('latestSection').style.display = 'none';
     document.getElementById('resultsSection').classList.add('visible');
     document.getElementById('sectionTitle').textContent = `Results for "${query}"`;
-    document.getElementById('navHomeLink').style.display = 'inline';
     document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('.cat-btn').classList.add('active');
     applyFilters();
@@ -508,8 +582,8 @@
     currentQuery = '';
     document.getElementById('heroSection').style.display = 'none';
     document.getElementById('homeCategories').style.display = 'none';
+    document.getElementById('latestSection').style.display = 'none';
     document.getElementById('resultsSection').classList.add('visible');
-    document.getElementById('navHomeLink').style.display = 'inline';
     document.getElementById('sectionTitle').textContent =
       cat.charAt(0).toUpperCase() + cat.slice(1) + ' Alternatives';
     document.querySelectorAll('.cat-btn').forEach(b => {
@@ -523,11 +597,12 @@
     autoSlideTimers = [];
     document.getElementById('heroSection').style.display = 'block';
     document.getElementById('homeCategories').style.display = 'block';
+    document.getElementById('latestSection').style.display = 'block';
     document.getElementById('resultsSection').classList.remove('visible');
-    document.getElementById('navHomeLink').style.display = 'none';
     document.getElementById('heroSearch').value = '';
     currentQuery = '';
     currentFilter = 'all';
+    renderLatest();
   }
 
   // ── SECRET ADMIN ACCESS (Ctrl + Shift + A) ───────────────────
@@ -567,7 +642,7 @@
 
   function addProduct() {
     const name     = document.getElementById('f_name').value.trim();
-    const alt      = document.getElementById('f_alt').value.trim();
+    const tags     = document.getElementById('f_tags').value.trim();
     const category = document.getElementById('f_category').value;
     const price    = document.getElementById('f_price').value.trim();
     const store    = document.getElementById('f_store').value.trim();
@@ -575,29 +650,29 @@
     const image2   = document.getElementById('f_image2').value.trim();
     const image3   = document.getElementById('f_image3').value.trim();
     const affLink  = document.getElementById('f_affLink').value.trim();
-    const prodLink = document.getElementById('f_prodLink').value.trim();
     const desc     = document.getElementById('f_desc').value.trim();
 
-    if (!name || !alt || !price) {
-      showToast('⚠️ Name, Alternative Name & Price are required.');
+    if (!name || !price) {
+      showToast('⚠️ Product Name & Price are required.');
       return;
     }
 
     const images = [image1, image2, image3].filter(Boolean);
+    const tagList = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [];
     products.push({
-      id: Date.now(), name, alt, category,
+      id: Date.now(), name, tags: tagList, category,
       price: price.startsWith('₹') ? price : '₹' + price,
       store,
       image: images[0] || 'https://placehold.co/400x300?text=No+Image',
       images: images.length ? images : ['https://placehold.co/400x300?text=No+Image'],
       affiliateLink: affLink || '#',
-      link: prodLink || '#',
       description: desc
     });
 
     renderAdminList();
+    renderLatest();
     showToast('✅ Product added!');
-    ['f_name','f_alt','f_price','f_store','f_image1','f_image2','f_image3','f_affLink','f_prodLink','f_desc']
+    ['f_name','f_tags','f_price','f_store','f_image1','f_image2','f_image3','f_affLink','f_desc']
       .forEach(id => document.getElementById(id).value = '');
     document.getElementById('f_category').value = 'electronics';
   }
@@ -605,7 +680,36 @@
   function deleteProduct(id) {
     products = products.filter(p => p.id !== id);
     renderAdminList();
+    renderLatest();
     showToast('🗑 Product removed.');
+  }
+
+  function toggleEdit(id) {
+    const el = document.getElementById('edit-' + id);
+    el.classList.toggle('open');
+  }
+
+  function saveEdit(id) {
+    const p = products.find(x => x.id === id);
+    if (!p) return;
+    p.name        = document.getElementById('e_name_' + id).value.trim() || p.name;
+    const rawTags = document.getElementById('e_tags_' + id).value.trim();
+    p.tags        = rawTags ? rawTags.split(',').map(t => t.trim()).filter(Boolean) : [];
+    p.category    = document.getElementById('e_category_' + id).value;
+    p.store       = document.getElementById('e_store_' + id).value.trim();
+    const rawPrice = document.getElementById('e_price_' + id).value.trim();
+    if (rawPrice) p.price = rawPrice.startsWith('₹') ? rawPrice : '₹' + rawPrice;
+    const img1 = document.getElementById('e_image1_' + id).value.trim();
+    const img2 = document.getElementById('e_image2_' + id).value.trim();
+    const img3 = document.getElementById('e_image3_' + id).value.trim();
+    const newImgs = [img1, img2, img3].filter(Boolean);
+    if (newImgs.length) { p.images = newImgs; p.image = newImgs[0]; }
+    const aff = document.getElementById('e_affLink_' + id).value.trim();
+    if (aff) p.affiliateLink = aff;
+    p.description = document.getElementById('e_desc_' + id).value.trim();
+    renderAdminList();
+    renderLatest();
+    showToast('✅ Product updated!');
   }
 
   function renderAdminList() {
@@ -617,18 +721,75 @@
       return;
     }
     list.innerHTML = products.map(p => `
-      <div class="admin-product-item">
-        <img class="admin-product-thumb" src="${p.image}" alt="${p.name}"
-             onerror="this.src='https://placehold.co/56x56?text=?'" />
-        <div class="admin-product-info">
-          <div class="admin-product-name">${p.name} → ${p.alt}</div>
-          <div class="admin-product-meta">
-            <span>📁 ${p.category}</span>
-            <span>💰 ${p.price}</span>
-            ${p.store ? `<span>🏪 ${p.store}</span>` : ''}
+      <div class="admin-product-item" style="flex-direction:column;align-items:stretch;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <img class="admin-product-thumb" src="${p.image}" alt="${p.name}"
+               onerror="this.src='https://placehold.co/56x56?text=?'" />
+          <div class="admin-product-info">
+            <div class="admin-product-name">${p.name}</div>
+            <div class="admin-product-meta">
+              <span>📁 ${p.category}</span>
+              <span>💰 ${p.price}</span>
+              ${p.store ? `<span>🏪 ${p.store}</span>` : ''}
+              ${p.tags && p.tags.length ? `<span>🏷 ${p.tags.join(', ')}</span>` : ''}
+            </div>
+          </div>
+          <div class="admin-btn-group">
+            <button class="btn-edit" onclick="toggleEdit(${p.id})">✏️ Edit</button>
+            <button class="btn-delete" onclick="deleteProduct(${p.id})">🗑 Delete</button>
           </div>
         </div>
-        <button class="btn-delete" onclick="deleteProduct(${p.id})">🗑 Delete</button>
+        <div class="edit-inline" id="edit-${p.id}">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Product Name</label>
+              <input id="e_name_${p.id}" type="text" value="${p.name}" />
+            </div>
+            <div class="form-group">
+              <label>Tags (comma-separated)</label>
+              <input id="e_tags_${p.id}" type="text" value="${(p.tags || []).join(', ')}" placeholder="budget, 5G, under-20k" />
+            </div>
+            <div class="form-group">
+              <label>Category</label>
+              <select id="e_category_${p.id}">
+                <option value="electronics" ${p.category==='electronics'?'selected':''}>📱 Electronics</option>
+                <option value="fashion" ${p.category==='fashion'?'selected':''}>👗 Fashion</option>
+                <option value="appliances" ${p.category==='appliances'?'selected':''}>🏠 Appliances</option>
+                <option value="books" ${p.category==='books'?'selected':''}>📚 Books</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Store</label>
+              <input id="e_store_${p.id}" type="text" value="${p.store || ''}" />
+            </div>
+            <div class="form-group">
+              <label>Price</label>
+              <input id="e_price_${p.id}" type="text" value="${p.price}" />
+            </div>
+            <div class="form-group">
+              <label>Affiliate Link</label>
+              <input id="e_affLink_${p.id}" type="text" value="${p.affiliateLink || ''}" />
+            </div>
+            <div class="form-group full">
+              <label>Image URL 1</label>
+              <input id="e_image1_${p.id}" type="text" value="${(p.images && p.images[0]) || ''}" />
+            </div>
+            <div class="form-group full">
+              <label>Image URL 2</label>
+              <input id="e_image2_${p.id}" type="text" value="${(p.images && p.images[1]) || ''}" />
+            </div>
+            <div class="form-group full">
+              <label>Image URL 3</label>
+              <input id="e_image3_${p.id}" type="text" value="${(p.images && p.images[2]) || ''}" />
+            </div>
+            <div class="form-group full">
+              <label>Description</label>
+              <textarea id="e_desc_${p.id}">${p.description || ''}</textarea>
+            </div>
+          </div>
+          <button class="save-btn" onclick="saveEdit(${p.id})">💾 Save Changes</button>
+          <button class="cancel-btn" onclick="toggleEdit(${p.id})">Cancel</button>
+        </div>
       </div>
     `).join('');
   }
@@ -639,6 +800,34 @@
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 3000);
   }
+
+  // ── LATEST PRODUCTS ───────────────────────────────────────────
+  function renderLatest() {
+    const container = document.getElementById('latestList');
+    container.innerHTML = products.map(p => `
+      <div class="latest-card" onclick="browseCategory('${p.category}')">
+        <div class="latest-card-left">
+          <img class="latest-card-img"
+               src="${(p.images && p.images[0]) || p.image || 'https://placehold.co/320x220?text=No+Image'}"
+               alt="${p.name}"
+               onerror="this.src='https://placehold.co/320x220?text=No+Image'" />
+        </div>
+        <div class="latest-card-body">
+          <div class="latest-card-meta">
+            <span class="latest-card-category">${p.category.charAt(0).toUpperCase() + p.category.slice(1)}</span>
+          </div>
+          <div class="latest-card-title">${p.name} — Best Cheaper Alternative</div>
+          <div class="latest-card-desc">${p.description || 'A great budget-friendly alternative with excellent value for money. Tap View Deal to explore similar products and find the best price available online right now.'}</div>
+          <div class="latest-card-footer">
+            <button class="latest-card-btn" onclick="event.stopPropagation(); browseCategory('${p.category}')">VIEW DEAL</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Init on load
+  renderLatest();
 </script>
 </body>
 </html>
