@@ -607,7 +607,7 @@
 
   // ── SECRET ADMIN ACCESS (Ctrl + Shift + A) ───────────────────
   document.addEventListener('keydown', function(e) {
-    if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+    if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
       e.preventDefault();
       openAdmin();
     }
@@ -631,7 +631,19 @@
   }
 
   // ── ADMIN ─────────────────────────────────────────────────────
+  // simple hash (obfuscation, not real security)
+  function hash(str){
+    let h=0; for(let i=0;i<str.length;i++){ h=(h<<5)-h+str.charCodeAt(i); h|=0; }
+    return h.toString();
+  }
+  const ADMIN_HASH = hash('248655');
+
   function openAdmin() {
+    const input = prompt('Enter Admin Password:');
+    if(!input || hash(input) !== ADMIN_HASH){
+      alert('Access denied');
+      return;
+    }
     document.getElementById('adminOverlay').classList.add('open');
     renderAdminList();
   }
