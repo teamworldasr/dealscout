@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AltFinder</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f7;
+      color: #1d1d1f;
+    }
+
+    /* NAV */
+    nav {
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #e5e5e5;
+      padding: 16px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .logo span { color: #0071e3; }
+
+    .nav-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: #555;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: #0071e3; }
+
+    /* HERO */
+    .hero {
+      text-align: center;
+      padding: 80px 20px 50px;
+    }
+
+    .hero h1 {
+      font-size: 52px;
+      font-weight: 700;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 span { color: #0071e3; }
+
+    .hero p {
+      font-size: 18px;
+      color: #666;
+      margin-bottom: 36px;
+    }
+
+    .search-wrap {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .search-wrap input {
+      width: 100%;
+      max-width: 480px;
+      padding: 16px 20px;
+      border-radius: 14px;
+      border: 1.5px solid #ddd;
+      font-size: 16px;
+      outline: none;
+      transition: border 0.2s, box-shadow 0.2s;
+      background: white;
+    }
+
+    .search-wrap input:focus {
+      border-color: #0071e3;
+      box-shadow: 0 0 0 4px rgba(0,113,227,0.1);
+    }
+
+    .search-wrap button {
+      padding: 16px 28px;
+      background: #0071e3;
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .search-wrap button:hover { background: #005bb5; }
+
+    /* CATEGORIES */
+    .categories {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 20px;
+      margin-bottom: 10px;
+    }
+
+    .cat-btn {
+      padding: 8px 20px;
+      border-radius: 999px;
+      border: 1.5px solid #ddd;
+      background: white;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #444;
+    }
+
+    .cat-btn:hover, .cat-btn.active {
+      background: #0071e3;
+      color: white;
+      border-color: #0071e3;
+    }
+
+    /* SECTION TITLE */
+    .section-title {
+      text-align: center;
+      font-size: 22px;
+      font-weight: 600;
+      margin: 10px 0 24px;
+      color: #1d1d1f;
+    }
+
+    /* PRODUCT GRID */
+    .container {
+      max-width: 1100px;
+      margin: auto;
+      padding: 0 20px 60px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    /* CARD */
+    .card {
+      background: white;
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.1);
+    }
+
+    .card-badge {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: #e8f5e9;
+      color: #2e7d32;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+
+    .card-category {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #0071e3;
+      margin-bottom: 8px;
+    }
+
+    .card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .card .original {
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 12px;
+    }
+
+    .card .original span {
+      text-decoration: line-through;
+    }
+
+    .price-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .alt-price {
+      font-size: 26px;
+      font-weight: 700;
+      color: #1d1d1f;
+    }
+
+    .save-tag {
+      background: #fff3e0;
+      color: #e65100;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    .rating {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 18px;
+    }
+
+    .rating span { color: #f5a623; }
+
+    .btn {
+      display: block;
+      text-align: center;
+      padding: 12px;
+      background: #1d1d1f;
+      color: white;
+      text-decoration: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    .btn:hover { background: #0071e3; }
+
+    /* NO RESULTS */
+    .no-results {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+      font-size: 16px;
+      display: none;
+    }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 30px;
+      font-size: 13px;
+      color: #aaa;
+      border-top: 1px solid #eee;
+    }
+
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 32px; }
+      nav { padding: 14px 20px; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Alt<span>Finder</span></div>
+  <ul class="nav-links">
+    <li><a href="#">Electronics</a></li>
+    <li><a href="#">Fashion</a></li>
+    <li><a href="#">Appliances</a></li>
+    <li><a href="#">Books</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Find <span>Cheaper</span><br>Alternatives Instantly</h1>
+  <p>Search any product. We'll show you 5 smarter, cheaper options.</p>
+  <div class="search-wrap">
+    <input type="text" id="search" placeholder="e.g. iPhone 14, Nike Air Max..." />
+    <button onclick="filterProducts()">Search</button>
+  </div>
+</div>
+
+<!-- CATEGORIES -->
+<div class="categories">
+  <button class="cat-btn active" onclick="filterByCategory('all', this)">All</button>
+  <button class="cat-btn" onclick="filterByCategory('electronics', this)">📱 Electronics</button>
+  <button class="cat-btn" onclick="filterByCategory('fashion', this)">👟 Fashion</button>
+  <button class="cat-btn" onclick="filterByCategory('appliances', this)">🏠 Appliances</button>
+  <button class="cat-btn" onclick="filterByCategory('books', this)">📚 Books</button>
+</div>
+
+<!-- PRODUCTS -->
+<div class="container">
+  <p class="section-title" id="sectionTitle">Showing all alternatives</p>
+  <div class="grid" id="productGrid"></div>
+  <div class="no-results" id="noResults">😕 No alternatives found. Try a different search.</div>
+</div>
+
+<!-- FOOTER -->
+<footer>© 2025 AltFinder · Find smarter. Spend less.</footer>
+
+<script>
+const products = [
+  {
+    name: "iPhone 14",
+    category: "electronics",
+    alt: "Samsung Galaxy S23",
+    originalPrice: "$999",
+    altPrice: "$699",
+    discount: "30% OFF",
+    rating: 4.5,
+    link: "#"
+  },
+  {
+    name: "iPhone 14",
+    category: "electronics",
+    alt: "Google Pixel 7",
+    originalPrice: "$999",
+    altPrice: "$599",
+    discount: "40% OFF",
+    rating: 4.4,
+    link: "#"
+  },
+  {
+    name: "MacBook Pro",
+    category: "electronics",
+    alt: "Dell XPS 13",
+    originalPrice: "$1,999",
+    altPrice: "$1,199",
+    discount: "40% OFF",
+    rating: 4.6,
+    link: "#"
+  },
+  {
+    name: "Sony WH-1000XM5",
+    category: "electronics",
+    alt: "Anker Q45 Headphones",
+    originalPrice: "$399",
+    altPrice: "$79",
+    discount: "80% OFF",
+    rating: 4.3,
+    link: "#"
+  },
+  {
+    name: "Nike Air Max",
+    category: "fashion",
+    alt: "Adidas Ultraboost",
+    originalPrice: "$200",
+    altPrice: "$120",
+    discount: "40% OFF",
+    rating: 4.5,
+    link: "#"
+  },
+  {
+    name: "Nike Air Max",
+    category: "fashion",
+    alt: "New Balance 574",
+    originalPrice: "$200",
+    altPrice: "$85",
+    discount: "57% OFF",
+    rating: 4.4,
+    link: "#"
+  },
+  {
+    name: "Levi's 501 Jeans",
+    category: "fashion",
+    alt: "Wrangler Authentics Jeans",
+    originalPrice: "$98",
+    altPrice: "$35",
+    discount: "64% OFF",
+    rating: 4.2,
+    link: "#"
+  },
+  {
+    name: "Dyson V15",
+    category: "appliances",
+    alt: "Shark IZ462H Vacuum",
+    originalPrice: "$749",
+    altPrice: "$249",
+    discount: "67% OFF",
+    rating: 4.4,
+    link: "#"
+  },
+  {
+    name: "Dyson V15",
+    category: "appliances",
+    alt: "Bissell CleanView",
+    originalPrice: "$749",
+    altPrice: "$79",
+    discount: "89% OFF",
+    rating: 4.1,
+    link: "#"
+  },
+  {
+    name: "KitchenAid Mixer",
+    category: "appliances",
+    alt: "Hamilton Beach Stand Mixer",
+    originalPrice: "$499",
+    altPrice: "$99",
+    discount: "80% OFF",
+    rating: 4.3,
+    link: "#"
+  },
+  {
+    name: "Atomic Habits",
+    category: "books",
+    alt: "The Power of Habit",
+    originalPrice: "$27",
+    altPrice: "$14",
+    discount: "48% OFF",
+    rating: 4.7,
+    link: "#"
+  },
+  {
+    name: "Atomic Habits",
+    category: "books",
+    alt: "Tiny Habits",
+    originalPrice: "$27",
+    altPrice: "$12",
+    discount: "55% OFF",
+    rating: 4.5,
+    link: "#"
+  },
+  {
+    name: "Rich Dad Poor Dad",
+    category: "books",
+    alt: "The Total Money Makeover",
+    originalPrice: "$22",
+    altPrice: "$11",
+    discount: "50% OFF",
+    rating: 4.6,
+    link: "#"
+  }
+];
+
+let currentCategory = 'all';
+
+function renderStars(rating) {
+  const full = Math.floor(rating);
+  const half = rating % 1 >= 0.5 ? 1 : 0;
+  return '★'.repeat(full) + (half ? '½' : '') + ` (${rating})`;
+}
+
+function renderCards(list) {
+  const grid = document.getElementById('productGrid');
+  const noResults = document.getElementById('noResults');
+  grid.innerHTML = '';
+
+  if (list.length === 0) {
+    noResults.style.display = 'block';
+    return;
+  }
+
+  noResults.style.display = 'none';
+
+  list.forEach(p => {
+    grid.innerHTML += `
+      <div class="card">
+        <div class="card-badge">${p.discount}</div>
+        <div class="card-category">${p.category}</div>
+        <h3>${p.alt}</h3>
+        <p class="original">Alternative to: <span>${p.originalPrice}</span> ${p.name}</p>
+        <div class="price-row">
+          <span class="alt-price">${p.altPrice}</span>
+          <span class="save-tag">Save ${p.discount}</span>
+        </div>
+        <p class="rating"><span>★</span> ${p.rating} / 5.0</p>
+        <a href="${p.link}" class="btn" target="_blank">View Deal →</a>
+      </div>
+    `;
+  });
+}
+
+function filterProducts() {
+  const query = document.getElementById('search').value.toLowerCase();
+  const title = document.getElementById('sectionTitle');
+
+  let filtered = products;
+
+  if (currentCategory !== 'all') {
+    filtered = filtered.filter(p => p.category === currentCategory);
+  }
+
+  if (query) {
+    filtered = filtered.filter(p =>
+      p.name.toLowerCase().includes(query) ||
+      p.alt.toLowerCase().includes(query) ||
+      p.category.toLowerCase().includes(query)
+    );
+    title.textContent = `Results for "${query}"`;
+  } else {
+    title.textContent = currentCategory === 'all'
+      ? 'Showing all alternatives'
+      : `Showing ${currentCategory} alternatives`;
+  }
+
+  renderCards(filtered);
+}
+
+function filterByCategory(cat, btn) {
+  currentCategory = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('search').value = '';
+  filterProducts();
+}
+
+document.getElementById('search').addEventListener('input', filterProducts);
+
+// Initial render
+renderCards(products);
+</script>
+
+</body>
+</html>
