@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DealScout - Find Cheaper Alternatives</title>
+
     <style>
         :root {
             --primary: #007bff;
@@ -11,38 +12,34 @@
             --bg: #f8f9fa;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg);
+            background: var(--bg);
         }
 
         header {
             background: white;
-            padding: 1rem 5%;
+            padding: 15px 5%;
             border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
         }
 
-        .logo { font-weight: bold; font-size: 1.5rem; }
+        .logo { font-size: 1.4rem; font-weight: bold; }
         .logo span { color: var(--primary); }
 
         .hero {
             text-align: center;
-            padding: 50px 5%;
+            padding: 50px 20px;
             background: white;
-            border-bottom: 1px solid #eee;
         }
 
-        .hero h1 { font-size: 2.5rem; margin-bottom: 10px; }
-        .hero h1 span { color: var(--primary); }
-        .hero p { color: #666; font-size: 1rem; }
+        .hero h1 {
+            font-size: 2.3rem;
+            margin-bottom: 10px;
+        }
+
+        .hero span { color: var(--primary); }
 
         .container {
             max-width: 1200px;
@@ -60,196 +57,165 @@
             background: white;
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
-            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             display: flex;
             flex-direction: column;
         }
 
-        .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
-        }
-
         .image-container {
-            position: relative;
             height: 200px;
             background: #f1f1f1;
+            position: relative;
         }
 
         .image-container img {
             width: 100%;
             height: 100%;
             object-fit: contain;
-            padding: 10px;
         }
 
         .category-tag {
             position: absolute;
             top: 10px;
             right: 10px;
-            background: rgba(0,123,255,0.9);
+            background: var(--primary);
             color: white;
-            padding: 4px 12px;
+            font-size: 0.7rem;
+            padding: 4px 10px;
             border-radius: 20px;
-            font-size: 0.72rem;
-            text-transform: uppercase;
-            font-weight: 600;
         }
 
         .card-content {
-            padding: 20px;
-            flex-grow: 1;
+            padding: 15px;
             display: flex;
             flex-direction: column;
+            flex-grow: 1;
         }
 
         .product-name {
-            font-size: 1rem;
             font-weight: 600;
             margin-bottom: 5px;
-            color: var(--dark);
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
         }
 
         .store-name {
-            color: #888;
-            font-size: 0.82rem;
-            margin-bottom: 12px;
+            font-size: 0.8rem;
+            color: #777;
+            margin-bottom: 10px;
         }
 
-        .current-price {
-            font-size: 1.4rem;
+        .price {
+            font-size: 1.3rem;
             font-weight: bold;
-            color: var(--dark);
-            display: block;
             margin-bottom: 10px;
         }
 
         .description {
             font-size: 0.85rem;
-            color: #666;
-            line-height: 1.5;
-            margin-bottom: 18px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+            color: #555;
+            margin-bottom: 15px;
             flex-grow: 1;
         }
 
-        .view-deal-btn {
+        .btn {
             background: var(--dark);
             color: white;
+            text-align: center;
+            padding: 10px;
+            border-radius: 6px;
             text-decoration: none;
+        }
+
+        .loading, .error {
+            grid-column: 1/-1;
             text-align: center;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 0.9rem;
-            letter-spacing: 0.5px;
-            transition: background 0.2s;
+            padding: 50px;
         }
 
-        .view-deal-btn:hover { background: #333; }
-
-        .loading {
-            grid-column: 1 / -1;
-            text-align: center;
-            padding: 80px;
-            font-size: 1.1rem;
-            color: #888;
-        }
-
-        .error-msg {
-            grid-column: 1 / -1;
-            text-align: center;
-            padding: 60px 20px;
-            color: #e74c3c;
-        }
-
-        @media (max-width: 600px) {
-            .hero h1 { font-size: 1.8rem; }
-            #products-container { grid-template-columns: 1fr; }
-        }
+        .error { color: red; }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="logo">Deal<span>Scout</span></div>
-    </header>
+<header>
+    <div class="logo">Deal<span>Scout</span></div>
+</header>
 
-    <section class="hero">
-        <h1>Find <span>Cheaper</span> Alternatives</h1>
-        <p>Real-time deals — updated live from our database</p>
-    </section>
+<section class="hero">
+    <h1>Find <span>Cheaper</span> Alternatives</h1>
+    <p>Real-time deals — updated live from our database</p>
+</section>
 
-    <div class="container">
-        <div id="products-container">
-            <div class="loading">⏳ Fetching fresh deals...</div>
-        </div>
+<div class="container">
+    <div id="products-container">
+        <div class="loading">Loading deals...</div>
     </div>
+</div>
 
-    <script>
-        var SUPABASE_URL = "https://nquwvshatohcwwjqgfyx.supabase.co";
-        var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xd3V2c2hhdG9oY3d3anFnZnl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODQ0NzAsImV4cCI6MjA5MTg2MDQ3MH0.n3v26lqAO5ZStetI0NsLyN9QfMhpYfRr6O02bUyedsE";
+<script>
+    var SUPABASE_URL = "https://nqwuvshatohcwwjqgfyx.supabase.co";
+    var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xd3V2c2hhdG9oY3d3anFnZnl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODQ0NzAsImV4cCI6MjA5MTg2MDQ3MH0.n3v26lqAO5ZStetI0NsLyN9QfMhpYfRr6O02bUyedsE";
 
-        function fetchProducts() {
-            var xhr = new XMLHttpRequest();
-            xhr.open("GET", "https://nquwvshatohcwwjqgfyx.supabase.co/rest/v1/products?select=*", true);
-            xhr.setRequestHeader("apikey", SUPABASE_KEY);
-            xhr.setRequestHeader("Authorization", "Bearer " + SUPABASE_KEY);
-            xhr.onload = function() {
-                if (xhr.status === 200) {
-                    var products = JSON.parse(xhr.responseText);
-                    renderProducts(products);
-                } else {
-                    showError("Server returned: " + xhr.status);
-                }
-            };
-            xhr.onerror = function() {
-                showError("Network error. Check your internet connection.");
-            };
-            xhr.send();
-        }
+    function fetchProducts() {
+        var xhr = new XMLHttpRequest();
 
-        function renderProducts(products) {
-            var container = document.getElementById("products-container");
-            if (!products || products.length === 0) {
-                container.innerHTML = '<div class="error-msg">No products found in database yet.</div>';
-                return;
+        xhr.open("GET", SUPABASE_URL + "/rest/v1/products?select=*", true);
+        xhr.setRequestHeader("apikey", SUPABASE_KEY);
+        xhr.setRequestHeader("Authorization", "Bearer " + SUPABASE_KEY);
+
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                var data = JSON.parse(xhr.responseText);
+                renderProducts(data);
+            } else {
+                showError("API error: " + xhr.status);
             }
-            container.innerHTML = "";
-            for (var i = 0; i < products.length; i++) {
-                var p = products[i];
-                var card = document.createElement("div");
-                card.className = "product-card";
-                card.innerHTML =
-                    '<div class="image-container">' +
-                        '<img src="' + (p.image1 || "https://placehold.co/400x300?text=No+Image") + '" alt="' + p.name + '" onerror="this.src=\'https://placehold.co/400x300?text=No+Image\'">' +
-                        '<span class="category-tag">' + (p.category || "Deal") + '</span>' +
-                    '</div>' +
-                    '<div class="card-content">' +
-                        '<h3 class="product-name">' + p.name + '</h3>' +
-                        '<p class="store-name">via ' + (p.store || "Online Store") + '</p>' +
-                        '<span class="current-price">' + (p.price || "N/A") + '</span>' +
-                        '<p class="description">' + (p.description || "") + '</p>' +
-                        '<a href="' + p.affiliate_link + '" target="_blank" class="view-deal-btn">VIEW DEAL</a>' +
-                    '</div>';
-                container.appendChild(card);
-            }
+        };
+
+        xhr.onerror = function () {
+            showError("Network error");
+        };
+
+        xhr.send();
+    }
+
+    function renderProducts(products) {
+        var container = document.getElementById("products-container");
+
+        if (!products.length) {
+            container.innerHTML = "<div class='error'>No products found</div>";
+            return;
         }
 
-        function showError(msg) {
-            document.getElementById("products-container").innerHTML =
-                '<div class="error-msg"><p>Error: ' + msg + '</p><small>Check Supabase RLS policy and table name.</small></div>';
-        }
+        container.innerHTML = "";
 
-        fetchProducts();
-    </script>
+        products.forEach(function(p) {
+            var card = document.createElement("div");
+            card.className = "product-card";
+
+            card.innerHTML =
+                "<​div class='image-container'>" +
+                    "<​img src='" + (p.image1 || "https://placehold.co/400x300") + "'>" +
+                    "<​div class='category-tag'>" + (p.category || "Deal") + "<​/div>" +
+                "<​/div>" +
+                "<​div class='card-content'>" +
+                    "<​div class='product-name'>" + p.name + "<​/div>" +
+                    "<div class='store-name'>via " + (p.store || "") + "<​/div>" +
+                    "<​div class='price'>" + (p.price || "") + "<​/div>" +
+                    "<​div class='description'>" + (p.description || "") + "<​/div>" +
+                    "<a class='btn' href='" + p.affiliate_link + "' target='_blank'>VIEW DEAL</a>" +
+                "<​/div>";
+
+            container.appendChild(card);
+        });
+    }
+
+    function showError(msg) {
+        document.getElementById("products-container").innerHTML =
+            "<​div class='error'>" + msg + "<​/div>";
+    }
+
+    fetchProducts();
+</script>
+
 </body>
 </html>
