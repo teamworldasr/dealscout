@@ -441,9 +441,9 @@
   // Supabase configuration
   const SUPABASE_URL = 'https://nqwuvshatohcwwjqgfyx.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qd3V2c2hhdG9oY3d3anFnZnl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODQ0NzAsImV4cCI6MjA5MTg2MDQ3MH0.n3v26lqAO5ZStetI0NsLyN9QfMhpYfRr6O02bUyedsE';
-  
+
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  
+
   const PLACEHOLDER_IMAGE = 'https://placehold.co/400x300?text=No+Image';
 
   let products = [];
@@ -483,7 +483,7 @@
     const image2 = String(row.image2 || row.image_2 || '').trim();
     const image3 = String(row.image3 || row.image_3 || '').trim();
     const images = [image1, image2, image3].filter(Boolean);
-    
+
     return {
       id: String(row.id || Date.now()),
       name: String(row.name || row.product_name || '').trim(),
@@ -530,13 +530,13 @@
       const { data, error } = await supabase
         .from('products')
         .select('*');
-      
+
       if (error) throw error;
-      
+
       const normalized = Array.isArray(data)
         ? data.map(normalizeProduct).filter(item => item.name)
         : [];
-        
+
       const snapshot = JSON.stringify(normalized);
       if (snapshot !== lastSheetSnapshot) {
         lastSheetSnapshot = snapshot;
@@ -553,33 +553,56 @@
 
   async function sendToSupabase(action, payload) {
     try {
+    // Remove id from payload on insert to avoid conflicts with serial PK
+    if (action === 'add') {
+      const { id, ...rest } = payload;
+      result = await supabase
+        .from('products')
+        .insert([rest])
+        .select();
+    } else if (action === 'update') {
+      result = await supabase
+        .from('products')
+        .update(buildSupabasePayload(payload))
+        .eq('id', payload.id)
+        .select();
+    } else if (action === 'delete') {
+      result = await supabase
+        .from('products')
+        .delete()
+        .eq('id', payload.id)
+        .select();
+    } else {
+      throw new Error('Invalid action');
+    }
+    return result;
       let result;
-      
+
       switch(action) {
         case 'add':
           result = await supabase
             .from('products')
             .insert([buildSupabasePayload(payload)]);
           break;
-          
+
         case 'update':
           result = await supabase
             .from('products')
             .update(buildSupabasePayload(payload))
             .eq('id', payload.id);
           break;
-          
+
         case 'delete':
           result = await supabase
             .from('products')
             .delete()
             .eq('id', payload.id);
           break;
-          
+
         default:
           throw new Error('Invalid action');
       }
-      
+
       if (result.error) throw result.error;
       return true;
     } catch (error) {
