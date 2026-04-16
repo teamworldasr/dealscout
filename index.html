@@ -376,7 +376,7 @@
   <div class="admin-panel">
     <button class="close-btn" onclick="closeAdmin()">✕</button>
     <h2>⚙️ Manage Products</h2>
-    <p class="subtitle">Add or remove products from your site.</p>
+    <p class="subtitle">Add, edit, and sync products with Google Sheets in real time.</p>
     <div class="form-grid">
       <div class="form-group">
         <label>Original Product Name *</label>
@@ -437,61 +437,135 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  let products = [
-    {
-      id: 1, name: "Apple iPhone 14", alt: "Redmi Note 12 Pro",
-      category: "electronics", price: "₹19,999", store: "Amazon",
-      image: "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=400&q=80",
-      images: [
-        "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=400&q=80",
-        "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=80",
-        "https://images.unsplash.com/photo-1565849904461-04a58ad377e0?w=400&q=80"
-      ],
-      affiliateLink: "#", link: "#"
-    },
-    {
-      id: 2, name: "Samsung Galaxy S23", alt: "OnePlus Nord CE 3",
-      category: "electronics", price: "₹24,999", store: "Flipkart",
-      image: "https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=400&q=80",
-      images: ["https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=400&q=80"],
-      affiliateLink: "#", link: "#"
-    },
-    {
-      id: 3, name: "Nike Air Max", alt: "Puma Softride",
-      category: "fashion", price: "₹3,499", store: "Myntra",
-      image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80",
-      images: ["https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80"],
-      affiliateLink: "#", link: "#"
-    },
-    {
-      id: 4, name: "Dyson V15", alt: "Eureka Forbes Trendy",
-      category: "appliances", price: "₹6,999", store: "Amazon",
-      image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80",
-      images: ["https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80"],
-      affiliateLink: "#", link: "#"
-    },
-    {
-      id: 5, name: "Atomic Habits", alt: "The Power of Habit",
-      category: "books", price: "₹299", store: "Amazon",
-      image: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&q=80",
-      images: ["https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&q=80"],
-      affiliateLink: "#", link: "#"
-    }
-  ];
+  const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxDcOfX0CsunxAZUXfL0SMy6RD9RsfR0r6LS1Va-6Vgld1YO6wtywn6ipgD3hbJegy_GA/exec';
+  const PLACEHOLDER_IMAGE = 'https://placehold.co/400x300?text=No+Image';
 
+  let products = [];
   let currentFilter = 'all';
   let currentQuery = '';
   let autoSlideTimers = [];
+  let lastSheetSnapshot = '';
+  let adminUnlocked = false;
+
+  function parseTags(tags) {
+    if (Array.isArray(tags)) return tags.filter(Boolean);
+    if (!tags) return [];
+    return String(tags).split(',').map(t => t.trim()).filter(Boolean);
+  }
+
+  function formatPrice(value) {
+    if (value === null || value === undefined) return '';
+    const raw = String(value).trim();
+    if (!raw) return '';
+    if (raw.includes('₹')) return raw;
+    const digits = raw.replace(/,/g, '');
+    if (!isNaN(digits) && digits !== '') {
+      return '₹' + Number(digits).toLocaleString('en-IN');
+    }
+    return raw;
+  }
+
+  function cleanCategory(category) {
+    const value = String(category || '').trim().toLowerCase();
+    if (['electronics', 'fashion', 'appliances', 'books'].includes(value)) return value;
+    return 'electronics';
+  }
+
+  function normalizeProduct(row) {
+    const image1 = String(row.image1 || '').trim();
+    const image2 = String(row.image2 || '').trim();
+    const image3 = String(row.image3 || '').trim();
+    const images = [image1, image2, image3].filter(Boolean);
+    return {
+      id: String(row.id || Date.now()),
+      name: String(row.name || '').trim(),
+      category: cleanCategory(row.category),
+      tags: parseTags(row.tags),
+      price: formatPrice(row.price),
+      store: String(row.store || '').trim(),
+      image: images[0] || PLACEHOLDER_IMAGE,
+      images: images.length ? images : [PLACEHOLDER_IMAGE],
+      affiliateLink: String(row.affiliateLink || '#').trim() || '#',
+      description: String(row.description || '').trim()
+    };
+  }
+
+  function buildSheetPayload(product) {
+    return {
+      id: String(product.id || Date.now()),
+      name: product.name || '',
+      category: product.category || '',
+      tags: (product.tags || []).join(', '),
+      price: product.price || '',
+      store: product.store || '',
+      image1: (product.images && product.images[0]) || product.image || '',
+      image2: (product.images && product.images[1]) || '',
+      image3: (product.images && product.images[2]) || '',
+      affiliateLink: product.affiliateLink || '',
+      description: product.description || ''
+    };
+  }
+
+  function refreshVisibleViews() {
+    renderLatest();
+    if (document.getElementById('resultsSection').classList.contains('visible')) {
+      applyFilters();
+    }
+    if (document.getElementById('adminOverlay').classList.contains('open')) {
+      renderAdminList();
+    }
+  }
+
+  async function fetchProductsFromSheet(options = {}) {
+    const { silent = false } = options;
+    try {
+      const response = await fetch(`${SHEET_API_URL}?t=${Date.now()}`);
+      const rawData = await response.json();
+      const normalized = Array.isArray(rawData)
+        ? rawData.map(normalizeProduct).filter(item => item.name)
+        : [];
+      const snapshot = JSON.stringify(normalized);
+      if (snapshot !== lastSheetSnapshot) {
+        lastSheetSnapshot = snapshot;
+        products = normalized;
+        refreshVisibleViews();
+      }
+      return normalized;
+    } catch (error) {
+      if (!silent) showToast('⚠️ Could not load data from Google Sheets.');
+      return products;
+    }
+  }
+
+  async function sendToSheet(action, payload) {
+    try {
+      await fetch(SHEET_API_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action, ...payload })
+      });
+      return true;
+    } catch (error) {
+      showToast('❌ Google Sheet sync failed.');
+      return false;
+    }
+  }
+
+  async function syncAfterWrite(successMessage) {
+    await new Promise(resolve => setTimeout(resolve, 800));
+    await fetchProductsFromSheet({ silent: true });
+    if (successMessage) showToast(successMessage);
+  }
 
   // ── AUTO-SLIDE ENGINE ─────────────────────────────────────────
   function startAutoSlide() {
-    // Clear any existing timers first
     autoSlideTimers.forEach(t => clearInterval(t));
     autoSlideTimers = [];
 
     document.querySelectorAll('.card-img-wrap').forEach(wrap => {
       const imgs = wrap.querySelectorAll('img');
-      if (imgs.length <= 1) return; // single image = stay static
+      if (imgs.length <= 1) return;
       const dots = wrap.querySelectorAll('.img-dot');
       let cur = 0;
       const timer = setInterval(() => {
@@ -513,11 +587,12 @@
       grid.innerHTML = '<p style="color:#aaa;grid-column:1/-1;text-align:center;padding:40px 0">No products found.</p>';
       return;
     }
+
     list.forEach(p => {
-      const imgs = (p.images && p.images.length) ? p.images : [p.image || 'https://placehold.co/400x300?text=No+Image'];
+      const imgs = (p.images && p.images.length) ? p.images : [p.image || PLACEHOLDER_IMAGE];
       const hasMultiple = imgs.length > 1;
       const imgTags = imgs.map((src, i) =>
-        `<img src="${src}" class="${i === 0 ? 'active' : ''}" alt="${p.alt}" onerror="this.src='https://placehold.co/400x300?text=No+Image'" />`
+        `<img src="${src}" class="${i === 0 ? 'active' : ''}" alt="${p.name}" onerror="this.src='${PLACEHOLDER_IMAGE}'" />`
       ).join('');
       const dots = hasMultiple
         ? `<div class="img-dots">${imgs.map((_, i) => `<button class="img-dot ${i === 0 ? 'active' : ''}" onclick="slideImg(this,${i})"></button>`).join('')}</div>`
@@ -525,25 +600,28 @@
       const arrows = hasMultiple
         ? `<button class="img-arrow prev" onclick="slideDir(this,-1)">‹</button><button class="img-arrow next" onclick="slideDir(this,1)">›</button>`
         : '';
+      const tagPills = p.tags && p.tags.length
+        ? `<div class="card-tags">${p.tags.slice(0, 3).map(tag => `<span class="card-tag-pill">${tag}</span>`).join('')}</div>`
+        : '';
 
       const card = document.createElement('div');
       card.className = 'card';
       card.innerHTML = `
         <div class="card-img-wrap">${imgTags}${dots}${arrows}</div>
         <div class="card-body">
-          <div class="card-name">${p.alt}</div>
+          <div class="card-name">${p.name}</div>
           <div class="card-store">${p.store || ''}</div>
           <span class="card-tag">${p.category}</span>
           <div class="card-prices">
-            <span class="alt-price">${p.price}</span>
+            <span class="alt-price">${p.price || '—'}</span>
           </div>
+          ${tagPills}
         </div>
-        <a href="${p.affiliateLink}" class="card-btn" target="_blank">VIEW DEAL</a>
+        <a href="${p.affiliateLink || '#'}" class="card-btn" target="_blank" rel="noopener noreferrer">VIEW DEAL</a>
       `;
       grid.appendChild(card);
     });
 
-    // Start auto-slide after DOM is ready
     setTimeout(startAutoSlide, 50);
   }
 
@@ -558,21 +636,26 @@
     document.getElementById('latestSection').style.display = 'none';
     document.getElementById('resultsSection').classList.add('visible');
     document.getElementById('sectionTitle').textContent = `Results for "${query}"`;
+    document.getElementById('resultsSearch').value = query;
     document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('.cat-btn').classList.add('active');
     applyFilters();
   }
 
   function applyFilters() {
-    let filtered = products;
+    let filtered = [...products];
     if (currentFilter !== 'all') filtered = filtered.filter(p => p.category === currentFilter);
     if (currentQuery) {
-      filtered = filtered.filter(p =>
-        p.name.toLowerCase().includes(currentQuery) ||
-        p.alt.toLowerCase().includes(currentQuery) ||
-        p.category.toLowerCase().includes(currentQuery) ||
-        (p.store && p.store.toLowerCase().includes(currentQuery))
-      );
+      filtered = filtered.filter(p => {
+        const haystack = [
+          p.name,
+          p.category,
+          p.store,
+          p.description,
+          ...(p.tags || [])
+        ].join(' ').toLowerCase();
+        return haystack.includes(currentQuery);
+      });
     }
     renderCards(filtered);
   }
@@ -591,11 +674,11 @@
     document.getElementById('homeCategories').style.display = 'none';
     document.getElementById('latestSection').style.display = 'none';
     document.getElementById('resultsSection').classList.add('visible');
-    document.getElementById('sectionTitle').textContent =
-      cat.charAt(0).toUpperCase() + cat.slice(1) + ' Alternatives';
-    document.querySelectorAll('.cat-btn').forEach(b => {
-      b.classList.toggle('active', b.textContent.toLowerCase().includes(cat));
-    });
+    document.getElementById('resultsSearch').value = '';
+    document.getElementById('sectionTitle').textContent = cat.charAt(0).toUpperCase() + cat.slice(1) + ' Alternatives';
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    const targetBtn = [...document.querySelectorAll('.cat-btn')].find(b => b.textContent.toLowerCase().includes(cat));
+    if (targetBtn) targetBtn.classList.add('active');
     applyFilters();
   }
 
@@ -607,6 +690,7 @@
     document.getElementById('latestSection').style.display = 'block';
     document.getElementById('resultsSection').classList.remove('visible');
     document.getElementById('heroSearch').value = '';
+    document.getElementById('resultsSearch').value = '';
     currentQuery = '';
     currentFilter = 'all';
     renderLatest();
@@ -633,24 +717,36 @@
     const dots = wrap.querySelectorAll('.img-dot');
     let cur = [...imgs].findIndex(img => img.classList.contains('active'));
     const next = (cur + dir + imgs.length) % imgs.length;
-    imgs[cur].classList.remove('active'); imgs[next].classList.add('active');
-    if (dots.length) { dots[cur].classList.remove('active'); dots[next].classList.add('active'); }
+    imgs[cur].classList.remove('active');
+    imgs[next].classList.add('active');
+    if (dots.length) {
+      dots[cur].classList.remove('active');
+      dots[next].classList.add('active');
+    }
   }
 
   // ── ADMIN ─────────────────────────────────────────────────────
-  // simple hash (obfuscation, not real security)
-  function hash(str){
-    let h=0; for(let i=0;i<str.length;i++){ h=(h<<5)-h+str.charCodeAt(i); h|=0; }
+  function hash(str) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) {
+      h = (h << 5) - h + str.charCodeAt(i);
+      h |= 0;
+    }
     return h.toString();
   }
+
   const ADMIN_HASH = hash('248655');
 
-  function openAdmin() {
-    const input = prompt('Enter Admin Password:');
-    if(!input || hash(input) !== ADMIN_HASH){
-      alert('Access denied');
-      return;
+  async function openAdmin() {
+    if (!adminUnlocked) {
+      const input = prompt('Enter Admin Password:');
+      if (!input || hash(input) !== ADMIN_HASH) {
+        alert('Access denied');
+        return;
+      }
+      adminUnlocked = true;
     }
+    await fetchProductsFromSheet({ silent: true });
     document.getElementById('adminOverlay').classList.add('open');
     renderAdminList();
   }
@@ -659,48 +755,60 @@
     document.getElementById('adminOverlay').classList.remove('open');
   }
 
-  function addProduct() {
-    const name     = document.getElementById('f_name').value.trim();
-    const tags     = document.getElementById('f_tags').value.trim();
+  async function addProduct() {
+    const name = document.getElementById('f_name').value.trim();
+    const tags = document.getElementById('f_tags').value.trim();
     const category = document.getElementById('f_category').value;
-    const price    = document.getElementById('f_price').value.trim();
-    const store    = document.getElementById('f_store').value.trim();
-    const image1   = document.getElementById('f_image1').value.trim();
-    const image2   = document.getElementById('f_image2').value.trim();
-    const image3   = document.getElementById('f_image3').value.trim();
-    const affLink  = document.getElementById('f_affLink').value.trim();
-    const desc     = document.getElementById('f_desc').value.trim();
+    const price = document.getElementById('f_price').value.trim();
+    const store = document.getElementById('f_store').value.trim();
+    const image1 = document.getElementById('f_image1').value.trim();
+    const image2 = document.getElementById('f_image2').value.trim();
+    const image3 = document.getElementById('f_image3').value.trim();
+    const affLink = document.getElementById('f_affLink').value.trim();
+    const desc = document.getElementById('f_desc').value.trim();
 
     if (!name || !price) {
       showToast('⚠️ Product Name & Price are required.');
       return;
     }
 
-    const images = [image1, image2, image3].filter(Boolean);
-    const tagList = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [];
-    products.push({
-      id: Date.now(), name, tags: tagList, category,
-      price: price.startsWith('₹') ? price : '₹' + price,
+    const newProduct = normalizeProduct({
+      id: String(Date.now()),
+      name,
+      category,
+      tags,
+      price,
       store,
-      image: images[0] || 'https://placehold.co/400x300?text=No+Image',
-      images: images.length ? images : ['https://placehold.co/400x300?text=No+Image'],
-      affiliateLink: affLink || '#',
+      image1,
+      image2,
+      image3,
+      affiliateLink: affLink,
       description: desc
     });
 
+    products = [newProduct, ...products];
+    refreshVisibleViews();
     renderAdminList();
-    renderLatest();
-    showToast('✅ Product added!');
-    ['f_name','f_tags','f_price','f_store','f_image1','f_image2','f_image3','f_affLink','f_desc']
+    showToast('⏳ Saving to Google Sheets...');
+
+    const success = await sendToSheet('add', buildSheetPayload(newProduct));
+    if (!success) return;
+
+    ['f_name', 'f_tags', 'f_price', 'f_store', 'f_image1', 'f_image2', 'f_image3', 'f_affLink', 'f_desc']
       .forEach(id => document.getElementById(id).value = '');
     document.getElementById('f_category').value = 'electronics';
+
+    await syncAfterWrite('✅ Product added and synced.');
   }
 
-  function deleteProduct(id) {
-    products = products.filter(p => p.id !== id);
+  async function deleteProduct(id) {
+    products = products.filter(p => String(p.id) !== String(id));
+    refreshVisibleViews();
     renderAdminList();
-    renderLatest();
-    showToast('🗑 Product removed.');
+    showToast('⏳ Removing from Google Sheets...');
+    const success = await sendToSheet('delete', { id: String(id) });
+    if (!success) return;
+    await syncAfterWrite('🗑 Product removed and synced.');
   }
 
   function toggleEdit(id) {
@@ -708,54 +816,65 @@
     el.classList.toggle('open');
   }
 
-  function saveEdit(id) {
-    const p = products.find(x => x.id === id);
+  async function saveEdit(id) {
+    const p = products.find(x => String(x.id) === String(id));
     if (!p) return;
-    p.name        = document.getElementById('e_name_' + id).value.trim() || p.name;
+
     const rawTags = document.getElementById('e_tags_' + id).value.trim();
-    p.tags        = rawTags ? rawTags.split(',').map(t => t.trim()).filter(Boolean) : [];
-    p.category    = document.getElementById('e_category_' + id).value;
-    p.store       = document.getElementById('e_store_' + id).value.trim();
-    const rawPrice = document.getElementById('e_price_' + id).value.trim();
-    if (rawPrice) p.price = rawPrice.startsWith('₹') ? rawPrice : '₹' + rawPrice;
     const img1 = document.getElementById('e_image1_' + id).value.trim();
     const img2 = document.getElementById('e_image2_' + id).value.trim();
     const img3 = document.getElementById('e_image3_' + id).value.trim();
-    const newImgs = [img1, img2, img3].filter(Boolean);
-    if (newImgs.length) { p.images = newImgs; p.image = newImgs[0]; }
-    const aff = document.getElementById('e_affLink_' + id).value.trim();
-    if (aff) p.affiliateLink = aff;
-    p.description = document.getElementById('e_desc_' + id).value.trim();
+
+    const updatedProduct = normalizeProduct({
+      id: p.id,
+      name: document.getElementById('e_name_' + id).value.trim() || p.name,
+      tags: rawTags,
+      category: document.getElementById('e_category_' + id).value,
+      price: document.getElementById('e_price_' + id).value.trim() || p.price,
+      store: document.getElementById('e_store_' + id).value.trim(),
+      image1: img1,
+      image2: img2,
+      image3: img3,
+      affiliateLink: document.getElementById('e_affLink_' + id).value.trim(),
+      description: document.getElementById('e_desc_' + id).value.trim()
+    });
+
+    products = products.map(item => String(item.id) === String(id) ? updatedProduct : item);
+    refreshVisibleViews();
     renderAdminList();
-    renderLatest();
-    showToast('✅ Product updated!');
+    showToast('⏳ Updating Google Sheets...');
+
+    const success = await sendToSheet('update', buildSheetPayload(updatedProduct));
+    if (!success) return;
+
+    await syncAfterWrite('✅ Product updated and synced.');
   }
 
   function renderAdminList() {
     const list = document.getElementById('adminProductList');
-    document.getElementById('productCount').textContent =
-      `${products.length} product${products.length !== 1 ? 's' : ''}`;
+    document.getElementById('productCount').textContent = `${products.length} product${products.length !== 1 ? 's' : ''}`;
+
     if (products.length === 0) {
       list.innerHTML = '<div class="empty-list">No products yet. Add your first one above! 👆</div>';
       return;
     }
+
     list.innerHTML = products.map(p => `
       <div class="admin-product-item" style="flex-direction:column;align-items:stretch;">
         <div style="display:flex;align-items:center;gap:12px;">
-          <img class="admin-product-thumb" src="${p.image}" alt="${p.name}"
-               onerror="this.src='https://placehold.co/56x56?text=?'" />
+          <img class="admin-product-thumb" src="${p.image}" alt="${p.name}" onerror="this.src='https://placehold.co/56x56?text=?'" />
           <div class="admin-product-info">
             <div class="admin-product-name">${p.name}</div>
             <div class="admin-product-meta">
               <span>📁 ${p.category}</span>
-              <span>💰 ${p.price}</span>
+              <span>💰 ${p.price || '—'}</span>
               ${p.store ? `<span>🏪 ${p.store}</span>` : ''}
               ${p.tags && p.tags.length ? `<span>🏷 ${p.tags.join(', ')}</span>` : ''}
             </div>
           </div>
           <div class="admin-btn-group">
-            <button class="btn-edit" onclick="toggleEdit(${p.id})">✏️ Edit</button>
-            <button class="btn-delete" onclick="deleteProduct(${p.id})">🗑 Delete</button>
+            <button class="btn-edit" onclick="toggleEdit('${p.id}')">✏️ Edit</button>
+            <button class="btn-delete" onclick="deleteProduct('${p.id}')">🗑 Delete</button>
           </div>
         </div>
         <div class="edit-inline" id="edit-${p.id}">
@@ -771,10 +890,10 @@
             <div class="form-group">
               <label>Category</label>
               <select id="e_category_${p.id}">
-                <option value="electronics" ${p.category==='electronics'?'selected':''}>📱 Electronics</option>
-                <option value="fashion" ${p.category==='fashion'?'selected':''}>👗 Fashion</option>
-                <option value="appliances" ${p.category==='appliances'?'selected':''}>🏠 Appliances</option>
-                <option value="books" ${p.category==='books'?'selected':''}>📚 Books</option>
+                <option value="electronics" ${p.category === 'electronics' ? 'selected' : ''}>📱 Electronics</option>
+                <option value="fashion" ${p.category === 'fashion' ? 'selected' : ''}>👗 Fashion</option>
+                <option value="appliances" ${p.category === 'appliances' ? 'selected' : ''}>🏠 Appliances</option>
+                <option value="books" ${p.category === 'books' ? 'selected' : ''}>📚 Books</option>
               </select>
             </div>
             <div class="form-group">
@@ -783,7 +902,7 @@
             </div>
             <div class="form-group">
               <label>Price</label>
-              <input id="e_price_${p.id}" type="text" value="${p.price}" />
+              <input id="e_price_${p.id}" type="text" value="${p.price || ''}" />
             </div>
             <div class="form-group">
               <label>Affiliate Link</label>
@@ -806,8 +925,8 @@
               <textarea id="e_desc_${p.id}">${p.description || ''}</textarea>
             </div>
           </div>
-          <button class="save-btn" onclick="saveEdit(${p.id})">💾 Save Changes</button>
-          <button class="cancel-btn" onclick="toggleEdit(${p.id})">Cancel</button>
+          <button class="save-btn" onclick="saveEdit('${p.id}')">💾 Save Changes</button>
+          <button class="cancel-btn" onclick="toggleEdit('${p.id}')">Cancel</button>
         </div>
       </div>
     `).join('');
@@ -823,6 +942,11 @@
   // ── LATEST PRODUCTS ───────────────────────────────────────────
   function renderLatest() {
     const container = document.getElementById('latestList');
+    if (!products.length) {
+      container.innerHTML = '<p style="color:#888;font-size:14px;">No products in Google Sheets yet. Add one from the admin panel.</p>';
+      return;
+    }
+
     container.innerHTML = products.map(p => `
       <div class="latest-card" onclick="browseCategory('${p.category}')">
         <div class="latest-card-left">
@@ -835,18 +959,23 @@
           <div class="latest-card-meta">
             <span class="latest-card-category">${p.category.charAt(0).toUpperCase() + p.category.slice(1)}</span>
           </div>
-          <div class="latest-card-title">${p.name} — Best Cheaper Alternative</div>
-          <div class="latest-card-desc">${p.description || 'A great budget-friendly alternative with excellent value for money. Tap View Deal to explore similar products and find the best price available online right now.'}</div>
+          <div class="latest-card-title">${p.name}</div>
+          <div class="latest-card-desc">${p.description || 'A great budget-friendly pick synced directly from your Google Sheet.'}</div>
           <div class="latest-card-footer">
-            <button class="latest-card-btn" onclick="event.stopPropagation(); browseCategory('${p.category}')">VIEW DEAL</button>
+            <button class="latest-card-btn" onclick="event.stopPropagation(); window.open('${p.affiliateLink || '#'}', '_blank')">VIEW DEAL</button>
           </div>
         </div>
       </div>
     `).join('');
   }
 
-  // Init on load
-  renderLatest();
+  async function initApp() {
+    renderLatest();
+    await fetchProductsFromSheet();
+    setInterval(() => fetchProductsFromSheet({ silent: true }), 5000);
+  }
+
+  initApp();
 </script>
 </body>
 </html>
