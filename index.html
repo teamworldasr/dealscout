@@ -553,50 +553,32 @@
 
   async function sendToSupabase(action, payload) {
     try {
-    // Remove id from payload on insert to avoid conflicts with serial PK
-    if (action === 'add') {
-      const { id, ...rest } = payload;
-      result = await supabase
-        .from('products')
-        .insert([rest])
-        .select();
-    } else if (action === 'update') {
-      result = await supabase
-        .from('products')
-        .update(buildSupabasePayload(payload))
-        .eq('id', payload.id)
-        .select();
-    } else if (action === 'delete') {
-      result = await supabase
-        .from('products')
-        .delete()
-        .eq('id', payload.id)
-        .select();
-    } else {
-      throw new Error('Invalid action');
-    }
-    return result;
       let result;
 
       switch(action) {
         case 'add':
+          // Remove id from payload on insert to avoid conflicts with serial PK
+          const { id, ...rest } = payload;
           result = await supabase
             .from('products')
-            .insert([buildSupabasePayload(payload)]);
+            .insert([rest])
+            .select();
           break;
 
         case 'update':
           result = await supabase
             .from('products')
             .update(buildSupabasePayload(payload))
-            .eq('id', payload.id);
+            .eq('id', payload.id)
+            .select();
           break;
 
         case 'delete':
           result = await supabase
             .from('products')
             .delete()
-            .eq('id', payload.id);
+            .eq('id', payload.id)
+            .select();
           break;
 
         default:
